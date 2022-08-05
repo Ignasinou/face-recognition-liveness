@@ -14,9 +14,8 @@ from torchvision import transforms as T
 class FaceDetection():
     def __init__(self, min_detection_confidence, model_selection):
 
-
-        self.detector = mp.solutions.face_detection.FaceDetection(min_detection_confidence = min_detection_confidence,
-                                                                  model_selection = model_selection)
+        self.detector = mp.solutions.face_detection.FaceDetection(min_detection_confidence=min_detection_confidence,
+                                                                  model_selection=model_selection)
         # self.min_det_conf_th = min_det_conf_th
         # self.min_track_conf_th = min_track_conf_th
         # self.detector = mp.solutions.face_mesh.FaceMesh(
@@ -35,7 +34,8 @@ class FaceDetection():
         if predictions.detections:
             for detection in predictions.detections:
                 bbox = detection.location_data.relative_bounding_box
-                bbox = np.array([[bbox.xmin * w, bbox.ymin * h], [(bbox.xmin + bbox.width) * w, (bbox.ymin + bbox.height) * h]])
+                bbox = np.array(
+                    [[bbox.xmin * w, bbox.ymin * h], [(bbox.xmin + bbox.width) * w, (bbox.ymin + bbox.height) * h]])
                 bbox = np.round(bbox).astype(np.int32)
                 face_arr = extract_face(image, bbox.flatten().tolist())
                 boxes.append(bbox)
@@ -89,7 +89,7 @@ class LivenessDetection():
         output_pixel, output_binary = self.deepPix.run(["output_pixel", "output_binary"],
                                                        {"input": face_tensor.astype(np.float32)})
         liveness_score = (np.mean(output_pixel.flatten()) +
-                          np.mean(output_binary.flatten()))/2.0
+                          np.mean(output_binary.flatten())) / 2.0
         return liveness_score
 
 
@@ -131,6 +131,35 @@ def save_img(img, path):
     else:
         img.save(path)
 
+def get_faces_from_centerface(frame, centerface_threshold, centerface):
+    h, w = frame.shape[:2]
+    width = w
+    r = width / float(w)
+    height = int(h * r)
+
+    x_scale = w / width
+    y_scale = h / height
+
+    dets, lms = centerface(frame, height, width, threshold=centerface_threshold)
+
+    faces = []
+    boxes = []
+
+    for ff_idx, det in enumerate(dets):
+        box, score = det[:4], det[4]
+        x1 = int(box[0] * x_scale)
+        y1 = int(box[1] * y_scale)
+        x2 = int(box[2] * x_scale)
+        y2 = int(box[3] * y_scale)
+
+        bbox = np.array(
+            [[x1, y1], [x2, y2]])
+        bbox = np.round(bbox).astype(np.int32)
+        face_arr = extract_face(frame, bbox.flatten().tolist())
+        boxes.append(bbox)
+        faces.append(face_arr)
+
+    return boxes, faces
 
 def extract_face(img, box, image_size=160, margin=0, save_path=None):
     margin = [

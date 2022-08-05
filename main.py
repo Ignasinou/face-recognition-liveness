@@ -5,6 +5,13 @@ import tqdm
 from modules import FaceDetection, IdentityVerification, LivenessDetection
 import argparse
 import subprocess
+from centerface import CenterFace
+import onnxruntime as ort
+from modules import get_faces_from_centerface
+
+sess_options = ort.SessionOptions()
+centerface = CenterFace(ort, sess_options, landmarks=True)
+
 
 root = Path(os.path.abspath(__file__)).parent.absolute()
 data_folder = root / "data"
@@ -17,7 +24,8 @@ deepPix_checkpoint_path = data_folder / "OULU_Protocol_2_model_0_0.onnx"
 parser = argparse.ArgumentParser(description="BigRoom ASD inference")
 parser.add_argument('--videoFile')
 parser.add_argument('--liveness_th', default=0.03, type=float)
-parser.add_argument('--det_confidence', default=0.2, type=float)
+# parser.add_argument('--det_confidence', default=0.2, type=float)
+parser.add_argument('--centerface_threshold', type=float, default=0.7, help="centerface th")
 parser.add_argument('--det_model', default=1, choices=[0, 1], type=int, help="0 is 2 meters from camera 1 is anywhere")
 args = parser.parse_args()
 
@@ -35,7 +43,7 @@ subprocess.call(
         output_audio_filename),
     shell=True)
 
-faceDetector = FaceDetection(min_detection_confidence, model_selection)
+#faceDetector = FaceDetection(min_detection_confidence, model_selection)
 identityChecker = IdentityVerification(
     checkpoint_path=resNet_checkpoint_path.as_posix(), facebank_path=facebank_path.as_posix())
 livenessDetector = LivenessDetection(
@@ -57,7 +65,10 @@ while True:
         if not ret:
             break
 
-        faces, boxes = faceDetector(frame)
+        #faces, boxes = faceDetector(frame)
+        faces, boxes = get_faces_from_centerface(frame,
+                                                 centerface_threshold=args.centerface_threshold,
+                                                 centerface=centerface)
         if not len(faces):
             outVideo.write(frame.copy())
             continue
