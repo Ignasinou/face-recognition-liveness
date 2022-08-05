@@ -25,7 +25,7 @@ min_detection_confidence = 0.2
 model_selection = 1
 
 file_extension = "." + args.videoFile.split(".")[-1]
-output_video_filename = 'out/'+args.videoFile.replace(file_extension,'_output.mp4')
+output_video_filename = args.videoFile.replace(file_extension, '_output.mp4')
 
 faceDetector = FaceDetection(min_detection_confidence, model_selection)
 identityChecker = IdentityVerification(
