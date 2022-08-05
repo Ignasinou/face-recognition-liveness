@@ -16,7 +16,7 @@ deepPix_checkpoint_path = data_folder / "OULU_Protocol_2_model_0_0.onnx"
 
 parser = argparse.ArgumentParser(description="BigRoom ASD inference")
 parser.add_argument('--videoFile')
-parser.add_argument('--liveness_th', default=0.5, type=float)
+parser.add_argument('--liveness_th', default=0.03, type=float)
 parser.add_argument('--det_confidence', default=0.2, type=float)
 parser.add_argument('--det_model', default=1, choices=[0, 1], type=int, help="0 is 2 meters from camera 1 is anywhere")
 args = parser.parse_args()
