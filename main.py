@@ -30,7 +30,7 @@ output_video_filename = args.videoFile.replace(file_extension, '_output.mp4')
 output_audio_filename = args.videoFile.replace(file_extension, '.wav')
 
 subprocess.call(
-    'ffmpeg -i %s -pix_fmt yuv420p -c:v h264_nvenc -cq:a 0 -ac 1 -vn -threads 10 -ar 16000 %s' % (
+    'ffmpeg -i %s -pix_fmt yuv420p -c:v h264_nvenc -cq:a 0 -ac 1 -vn -threads 10 -ar 16000 %s -y' % (
         args.videoFile,
         output_audio_filename),
     shell=True)
