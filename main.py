@@ -74,7 +74,7 @@ while True:
             frame = cv2.rectangle(frame, box[0], box[1], color, 10)
             cv2.putText(frame, f"{liveness_score}", (box[0][0], box[0][1] + 30), cv2.FONT_HERSHEY_SIMPLEX,
                         1, (255, 255, 255), 2, cv2.LINE_AA)
-            outVideo.write(frame.copy())
+        outVideo.write(frame.copy())
     break
 
 outVideo.release()
