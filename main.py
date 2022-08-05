@@ -59,6 +59,7 @@ while True:
 
         faces, boxes = faceDetector(frame)
         if not len(faces):
+            outVideo.write(frame.copy())
             continue
 
         for face_arr, box in zip(faces, boxes):
