@@ -21,9 +21,9 @@ parser.add_argument('--det_confidence', default=0.2, type=float)
 parser.add_argument('--det_model', default=1, choices=[0, 1], help="0 is 2 meters from camera 1 is anywhere")
 args = parser.parse_args()
 
-liveness_th = 0.5
-min_detection_confidence = 0.2
-model_selection = 1
+liveness_th = args.liveness_th
+min_detection_confidence = args.det_confidence
+model_selection = args.det_model
 
 file_extension = "." + args.videoFile.split(".")[-1]
 output_video_filename = args.videoFile.replace(file_extension, '_output.mp4')
