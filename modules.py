@@ -12,32 +12,52 @@ from torchvision import transforms as T
 
 
 class FaceDetection():
-    def __init__(self):
-        self.detector = mp.solutions.face_mesh.FaceMesh(
-            max_num_faces=1, static_image_mode=True)
+    def __init__(self, min_detection_confidence, model_selection):
+
+
+        self.detector = mp.solutions.face_detection.FaceDetection(min_detection_confidence = min_detection_confidence,
+                                                                  model_selection = model_selection)
+        # self.min_det_conf_th = min_det_conf_th
+        # self.min_track_conf_th = min_track_conf_th
+        # self.detector = mp.solutions.face_mesh.FaceMesh(
+        #     max_num_faces=max_num_face,
+        #     static_image_mode=static_image_mode,
+        #     min_detection_confidence=min_det_conf_th,
+        #     min_tracking_confidence=min_track_conf_th)
 
     def __call__(self, image) -> Tuple[List[np.ndarray], List[List[int]]]:
         h, w = image.shape[:2]
-        predictions = self.detector.process(image[:, :, ::-1])
+        predictions = self.detector.process(image)
+
         boxes = []
         faces = []
-        if predictions.multi_face_landmarks:
-            for prediction in predictions.multi_face_landmarks:
-                pts = np.array([(pt.x * w, pt.y * h)
-                                for pt in prediction.landmark],
-                               dtype=np.float64)
-                bbox = np.vstack([pts.min(axis=0), pts.max(axis=0)])
+
+        if predictions.detections:
+            for detection in predictions.detections:
+                bbox = detection.location_data.relative_bounding_box
+                bbox = np.array([[bbox.xmin * w, bbox.ymin * h], [(bbox.xmin + bbox.width) * w, (bbox.ymin + bbox.height) * h]])
                 bbox = np.round(bbox).astype(np.int32)
                 face_arr = extract_face(image, bbox.flatten().tolist())
                 boxes.append(bbox)
                 faces.append(face_arr)
+
+        # if predictions.multi_face_landmarks:
+        #     for prediction in predictions.multi_face_landmarks:
+        #         pts = np.array([(pt.x * w, pt.y * h)
+        #                         for pt in prediction.landmark],
+        #                        dtype=np.float64)
+        #         bbox = np.vstack([pts.min(axis=0), pts.max(axis=0)])
+        #         bbox = np.round(bbox).astype(np.int32)
+        #         face_arr = extract_face(image, bbox.flatten().tolist())
+        #         boxes.append(bbox)
+        #         faces.append(face_arr)
         return faces, boxes
 
 
 class IdentityVerification():
     def __init__(self, checkpoint_path: str, facebank_path: str):
         self.resnet = onnxruntime.InferenceSession(
-            checkpoint_path, providers=['CPUExecutionProvider'])
+            checkpoint_path, providers=['CUDAExecutionProvider'])
         self.facebank = pd.read_csv(facebank_path, header=None)
 
     def __call__(self, face_arr: np.ndarray) -> Tuple[float, float]:
@@ -55,7 +75,7 @@ class IdentityVerification():
 class LivenessDetection():
     def __init__(self, checkpoint_path: str):
         self.deepPix = onnxruntime.InferenceSession(
-            checkpoint_path, providers=['CPUExecutionProvider'])
+            checkpoint_path, providers=['CUDAExecutionProvider'])
         self.trans = T.Compose([T.Resize((224, 224)),
                                 T.ToTensor(),
                                 T.Normalize(mean=[0.485, 0.456, 0.406],

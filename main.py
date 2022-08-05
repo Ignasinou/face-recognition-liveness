@@ -1,9 +1,9 @@
 import os
 from pathlib import Path
-
 import cv2
-
+import tqdm
 from modules import FaceDetection, IdentityVerification, LivenessDetection
+import argparse
 
 root = Path(os.path.abspath(__file__)).parent.absolute()
 data_folder = root / "data"
@@ -13,30 +13,63 @@ facebank_path = data_folder / "hm.csv"
 
 deepPix_checkpoint_path = data_folder / "OULU_Protocol_2_model_0_0.onnx"
 
-faceDetector = FaceDetection()
+parser = argparse.ArgumentParser(description="BigRoom ASD inference")
+parser.add_argument('--videoFile')
+parser.add_argument('--liveness_th', default=0.5, type=float)
+parser.add_argument('--det_confidence', default=0.2, type=float)
+parser.add_argument('--det_model', default=1, choices=[0, 1], help="0 is 2 meters from camera 1 is anywhere")
+args = parser.parse_args()
+
+liveness_th = 0.5
+min_detection_confidence = 0.2
+model_selection = 1
+
+file_extension = "." + args.videoFile.split(".")[-1]
+output_video_filename = 'out/'+args.videoFile.replace(file_extension,'_output.mp4')
+
+faceDetector = FaceDetection(min_detection_confidence, model_selection)
 identityChecker = IdentityVerification(
     checkpoint_path=resNet_checkpoint_path.as_posix(), facebank_path=facebank_path.as_posix())
 livenessDetector = LivenessDetection(
     checkpoint_path=deepPix_checkpoint_path.as_posix())
 
-cap = cv2.VideoCapture(0)
+video = cv2.VideoCapture(args.videoFile)
+num_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
+width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
+height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
+fps = video.get(cv2.CAP_PROP_FPS)
+outVideo = cv2.VideoWriter(
+                    output_video_filename
+                    , cv2.VideoWriter_fourcc(*'XVID'), fps, (width, height))
+
 while True:
-    ret, frame = cap.read()
-    if not ret:
-        break
+    for frame_num in tqdm.tqdm(range(int(num_frames))):
+        ret, frame = video.read()
 
-    faces, boxes = faceDetector(frame)
-    if not len(faces):
-        continue
+        if not ret:
+            break
 
-    face_arr = faces[0]
-    min_sim_score, mean_sim_score = identityChecker(face_arr)
-    liveness_score = livenessDetector(face_arr)
+        faces, boxes = faceDetector(frame)
+        if not len(faces):
+            continue
 
-    cv2.imshow("face", face_arr)
-    k = cv2.waitKey(1)
-    if k == ord("q"):
-        break
+        for face_arr, box in zip(faces, boxes):
 
+            min_sim_score, mean_sim_score = identityChecker(face_arr)
+            liveness_score = livenessDetector(face_arr)
+            if liveness_score >= liveness_th:
+                color = (0, 255, 0)
+            else:
+                color = (0, 0, 255)
+            liveness_score = float(f"{liveness_score:0.5f}")
+            frame = cv2.rectangle(frame, box[0], box[1], color, 10)
+            cv2.putText(frame, f"{liveness_score}", (box[0][0], box[0][1] + 30), cv2.FONT_HERSHEY_SIMPLEX,
+                       1, (255, 255, 255), 2, cv2.LINE_AA)
+            outVideo.write(frame.copy())
+        if frame_num >= 100:
+            break
+    break
+
+outVideo.release()
 cv2.destroyAllWindows()
-cap.release()
+video.release()
