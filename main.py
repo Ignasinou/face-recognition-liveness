@@ -26,12 +26,12 @@ parser.add_argument('--videoFile')
 parser.add_argument('--liveness_th', default=0.03, type=float)
 # parser.add_argument('--det_confidence', default=0.2, type=float)
 parser.add_argument('--centerface_threshold', type=float, default=0.7, help="centerface th")
-parser.add_argument('--det_model', default=1, choices=[0, 1], type=int, help="0 is 2 meters from camera 1 is anywhere")
+# parser.add_argument('--det_model', default=1, choices=[0, 1], type=int, help="0 is 2 meters from camera 1 is anywhere")
 args = parser.parse_args()
 
 liveness_th = args.liveness_th
-min_detection_confidence = args.det_confidence
-model_selection = args.det_model
+# min_detection_confidence = args.det_confidence
+# model_selection = args.det_model
 
 file_extension = "." + args.videoFile.split(".")[-1]
 output_video_filename = args.videoFile.replace(file_extension, '_output.mp4')
