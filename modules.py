@@ -159,7 +159,7 @@ def get_faces_from_centerface(frame, centerface_threshold, centerface):
         boxes.append(bbox)
         faces.append(face_arr)
 
-    return boxes, faces
+    return faces, boxes
 
 def extract_face(img, box, image_size=160, margin=0, save_path=None):
     margin = [
