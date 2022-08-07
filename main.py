@@ -75,7 +75,7 @@ while True:
 
         for face_arr, box in zip(faces, boxes):
 
-            min_sim_score, mean_sim_score = identityChecker(face_arr)
+            # min_sim_score, mean_sim_score = identityChecker(face_arr)
             liveness_score = livenessDetector(face_arr)
             if liveness_score >= liveness_th:
                 color = (0, 255, 0)
